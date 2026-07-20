@@ -85,28 +85,61 @@ projetos/1-classificacao-mnist/
 
 ## 📝 Relatório do Candidato
 
-👤 **Nome Completo:**
+👤 **Nome Completo: Carlos Eduardo Batista Diniz**
 
 ### 1️⃣ Resumo da Arquitetura do Modelo
 
-Descreva, em palavras, a arquitetura da CNN implementada em `train_model.py` (número de blocos convolucionais, uso de batch normalization/dropout, estratégia de validação/early stopping).
+A CNN implementada em `train_model.py` é composta por 3 blocos convolucionais sequenciais, cada um seguido de Batch Normalization e Max Pooling:
+
+- **Bloco 1:** Conv2D (32 filtros, 3x3) → BatchNormalization → MaxPooling2D (2x2)
+- **Bloco 2:** Conv2D (64 filtros, 3x3) → BatchNormalization → MaxPooling2D (2x2)
+- **Bloco 3:** Conv2D (128 filtros, 3x3) → BatchNormalization → MaxPooling2D (2x2)
+
+Após os blocos convolucionais, a saída é achatada (`Flatten`) e passa por uma camada de `Dropout(0.5)` para regularização, evitando overfitting, antes da camada de saída `Dense(10, activation="softmax")`, responsável pela classificação entre as 10 classes de dígitos (0-9).
+
+O modelo possui um total de **105.098 parâmetros** (~410 KB), sendo 104.650 treináveis e 448 não-treináveis (referentes às camadas de Batch Normalization).
+
+Para o treinamento, foi utilizado `validation_split=0.1` (10% dos dados de treino reservados para validação) e a técnica de **EarlyStopping**, monitorando a métrica `val_loss` com `patience=3` e `restore_best_weights=True`, garantindo que o modelo final salvo seja o de melhor desempenho em validação, evitando treinar além do necessário. O treinamento foi configurado para até 15 épocas, mas foi interrompido automaticamente pelo EarlyStopping na 7ª época.
 
 ### 2️⃣ Bibliotecas Utilizadas
 
-Liste as principais bibliotecas utilizadas, preferencialmente com suas versões.
+- **TensorFlow** 2.21.0
+- **Keras** 3.13.2
+- **NumPy** 2.3.4
 
 ### 3️⃣ Técnica de Otimização do Modelo
 
-Explique qual técnica foi utilizada para otimizar o modelo em `optimize_model.py`.
+Em `optimize_model.py`, o modelo treinado (`model.h5`) foi convertido para o formato TensorFlow Lite (`model.tflite`) utilizando o `tf.lite.TFLiteConverter`. A técnica de otimização aplicada foi a **Dynamic Range Quantization**, configurada através de `converter.optimizations = [tf.lite.Optimize.DEFAULT]`. Essa técnica reduz a precisão numérica dos pesos do modelo (de ponto flutuante de 32 bits para representações de menor precisão), diminuindo significativamente o tamanho do arquivo e o custo computacional da inferência, com impacto mínimo na acurácia — sendo especialmente adequada para implantação em dispositivos de borda (Edge AI) com recursos limitados.
 
 ### 4️⃣ Resultados Obtidos
 
-Informe a acurácia de validação obtida e o tamanho dos arquivos `model.h5` e `model.tflite`.
+| Métrica | Valor |
+|---|---|
+| Acurácia de validação final | **99,07%** |
+| Acurácia no conjunto de teste | **99,01%** |
+| Tamanho do `model.h5` | **1.290,91 KB** (~1,26 MB) |
+| Tamanho do `model.tflite` | **113,96 KB** |
+| Redução de tamanho após otimização | **91,2%** |
 
 ### 5️⃣ Comentários Adicionais (Opcional)
 
-Dificuldades encontradas, decisões técnicas importantes, limitações do modelo, aprendizados durante o desafio.
+Durante o desenvolvimento, o principal desafio encontrado não foi relacionado ao modelo em si, mas ao ambiente de execução: o `run_inference.py` inicialmente falhava ao tentar carregar o `model.tflite`, apresentando o erro `ValueError: Could not open`. Após investigação, identificou-se que o problema estava relacionado ao caminho do diretório do projeto, que continha caracteres acentuados (como "ç" em "Computação"), causando incompatibilidade com a biblioteca de baixo nível (C++) utilizada pelo `tf.lite.Interpreter` no Windows. A solução foi mover a pasta do projeto para um caminho sem caracteres especiais, o que resolveu o problema sem necessidade de alterar o código-fonte do `run_inference.py`.
+
+Como aprendizado técnico, esse episódio reforçou a importância de considerar particularidades do sistema operacional (encoding de caminhos) ao migrar soluções de ambiente de desenvolvimento para produção/edge, um cuidado relevante também em implantações reais de Edge AI.
 
 ### 6️⃣ Exemplo de Inferência
 
-Cole a saída do terminal ao rodar `run_inference.py` (predito vs. real para as 5+ amostras), e comente brevemente se houve algum caso interessante (acerto ou erro) entre as amostras testadas.
+Saída do terminal ao rodar `run_inference.py`:
+
+```
+Rodando inferencia em 5 amostras usando model.tflite:
+
+Amostra 1: predito=7 | real=7
+Amostra 2: predito=2 | real=2
+Amostra 3: predito=1 | real=1
+Amostra 4: predito=0 | real=0
+Amostra 5: predito=4 | real=4
+```
+
+As 5 amostras foram classificadas corretamente. Vale destacar que o modelo diferenciou bem o dígito 1 do 7, que são traços visualmente próximos e costumam gerar confusão em modelos menos robustos. Não houve degradação perceptível de desempenho após a quantização, o que confirma que a técnica de Dynamic Range Quantization manteve a capacidade de generalização do modelo mesmo com a redução de precisão dos pesos.
+
