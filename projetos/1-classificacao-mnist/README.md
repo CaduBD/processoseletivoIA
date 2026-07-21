@@ -104,8 +104,8 @@ Para o treinamento, foi utilizado `validation_split=0.1` (10% dos dados de trein
 ### 2️⃣ Bibliotecas Utilizadas
 
 - **TensorFlow** 2.21.0
-- **Keras** 3.13.2
-- **NumPy** 2.3.4
+- **Keras** 3.12.3
+- **NumPy** 2.2.6
 
 ### 3️⃣ Técnica de Otimização do Modelo
 
@@ -115,17 +115,17 @@ Em `optimize_model.py`, o modelo treinado (`model.h5`) foi convertido para o for
 
 | Métrica | Valor |
 |---|---|
-| Acurácia de validação final | **99,07%** |
-| Acurácia no conjunto de teste | **99,01%** |
+| Acurácia de validação final | **98,97%** |
+| Acurácia no conjunto de teste | **99,12%** |
 | Tamanho do `model.h5` | **1.290,91 KB** (~1,26 MB) |
 | Tamanho do `model.tflite` | **113,96 KB** |
 | Redução de tamanho após otimização | **91,2%** |
 
 ### 5️⃣ Comentários Adicionais (Opcional)
 
-Durante o desenvolvimento, o principal desafio encontrado não foi relacionado ao modelo em si, mas ao ambiente de execução: o `run_inference.py` inicialmente falhava ao tentar carregar o `model.tflite`, apresentando o erro `ValueError: Could not open`. Após investigação, identificou-se que o problema estava relacionado ao caminho do diretório do projeto, que continha caracteres acentuados (como "ç" em "Computação"), causando incompatibilidade com a biblioteca de baixo nível (C++) utilizada pelo `tf.lite.Interpreter` no Windows. A solução foi mover a pasta do projeto para um caminho sem caracteres especiais, o que resolveu o problema sem necessidade de alterar o código-fonte do `run_inference.py`.
+Um ponto que vale mencionar é a relação entre o tamanho do modelo e o desempenho: a quantização dinâmica reduziu o `model.tflite` para cerca de 9% do tamanho do `model.h5` original, sem impacto perceptível na acurácia (validação e teste ficaram praticamente no mesmo patamar de antes da conversão). Isso mostra que, para um problema relativamente simples como o MNIST, boa parte da precisão de 32 bits dos pesos originais é redundante — o modelo consegue manter a mesma capacidade de decisão com bem menos informação numérica, o que é justamente o tipo de ganho que interessa para Edge AI, onde memória e poder de processamento são limitados.
 
-Como aprendizado técnico, esse episódio reforçou a importância de considerar particularidades do sistema operacional (encoding de caminhos) ao migrar soluções de ambiente de desenvolvimento para produção/edge, um cuidado relevante também em implantações reais de Edge AI.
+Na arquitetura, optei por manter os blocos convolucionais relativamente enxutos (32-64-128 filtros) em vez de ir mais fundo, já que o MNIST não exige tanta capacidade representacional — uma rede maior tenderia só a aumentar o tempo de treino e o risco de overfitting sem ganho real de acurácia. O Dropout de 0.5 antes da camada final ajudou a manter a validação estável entre as épocas, e o EarlyStopping evitou treinar além do ponto em que o modelo já tinha parado de melhorar.
 
 ### 6️⃣ Exemplo de Inferência
 
