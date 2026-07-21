@@ -130,7 +130,6 @@ Como aprendizado técnico, esse episódio reforçou a importância de considerar
 ### 6️⃣ Exemplo de Inferência
 
 Saída do terminal ao rodar `run_inference.py`:
-
 ```
 Rodando inferencia em 5 amostras usando model.tflite:
 
