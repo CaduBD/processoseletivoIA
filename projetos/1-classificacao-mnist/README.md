@@ -101,6 +101,8 @@ O modelo possui um total de **105.098 parâmetros** (~410 KB), sendo 104.650 tre
 
 Para o treinamento, foi utilizado `validation_split=0.1` (10% dos dados de treino reservados para validação) e a técnica de **EarlyStopping**, monitorando a métrica `val_loss` com `patience=3` e `restore_best_weights=True`, garantindo que o modelo final salvo seja o de melhor desempenho em validação, evitando treinar além do necessário. O treinamento foi configurado para até 15 épocas, mas foi interrompido automaticamente pelo EarlyStopping na 7ª época.
 
+A progressão de filtros nos blocos convolucionais (32 → 64 → 128) foi escolhida deliberadamente enxuta: como o MNIST é um problema de classificação relativamente simples (dígitos em escala de cinza, baixa resolução), uma rede mais profunda ou com mais filtros tenderia apenas a aumentar o tempo de treino e o risco de overfitting, sem ganho proporcional de acurácia.
+
 ### 2️⃣ Bibliotecas Utilizadas
 
 - **TensorFlow** 2.21.0
